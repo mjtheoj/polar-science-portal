@@ -1,17 +1,48 @@
 /**
- * Placeholder for Supabase generated types.
- *
- * Once the schema exists (Phase 3), regenerate this with:
+ * Phase 2 Database types — profiles + user_role.
+ * After Phase 3+ schema changes, regenerate with:
  *   npx supabase gen types typescript --project-id uumartyqjyauuxwcrpqz > types/supabase.ts
- *
- * Until then this is an empty-but-valid Database type so the Supabase
- * client factories in lib/supabase/ type-check.
  */
 export type Database = {
   public: {
-    Tables: Record<string, never>;
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          role: Database["public"]["Enums"]["user_role"];
+          institution: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name: string;
+          email: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          institution?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          email?: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          institution?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Functions: {
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+    };
+    Enums: {
+      user_role: "admin" | "researcher" | "teacher" | "student" | "public";
+    };
   };
 };

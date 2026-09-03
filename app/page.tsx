@@ -54,7 +54,7 @@ export default async function HomePage() {
 
       <section className="mt-16 max-w-2xl border-t border-border pt-8">
         <h2 className="font-display text-lg font-semibold text-foreground">
-          Phase 1 build status
+          Phase 2 build status
         </h2>
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex items-center justify-between border-b border-border pb-2">
@@ -73,15 +73,17 @@ export default async function HomePage() {
               {status.connected ? "Connected" : `Not connected — ${status.detail}`}
             </dd>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border pb-2">
             <dt className="text-muted-foreground">Navigation shell</dt>
             <dd className="font-medium text-primary">In place</dd>
           </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Auth + RLS</dt>
+            <dd className="font-medium text-primary">Phase 2 — login/register + profiles + middleware</dd>
+          </div>
         </dl>
         <p className="mt-4 text-xs text-muted-foreground">
-          This status panel is a Phase 1 development check, not user-facing
-          product copy — it will be replaced by the full landing page in a
-          later phase.
+          Auth is live: register (Public/Student/Teacher/Researcher), sign in, session refresh via middleware, RLS on profiles (role change blocked by DB trigger).
         </p>
       </section>
     </div>

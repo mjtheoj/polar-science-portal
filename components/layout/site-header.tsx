@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/layout/site-nav";
+import { UserMenu } from "@/components/layout/user-menu";
 
 export function SiteHeader() {
   return (
@@ -15,21 +16,7 @@ export function SiteHeader() {
         </Link>
 
         <SiteNav />
-
-        <div className="hidden md:flex items-center gap-2 shrink-0">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-foreground/80 hover:text-foreground px-3 py-2"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="text-sm font-medium rounded-md bg-primary text-primary-foreground px-3.5 py-2 hover:bg-primary/90"
-          >
-            Register
-          </Link>
-        </div>
+        <UserMenu />
       </div>
     </header>
   );

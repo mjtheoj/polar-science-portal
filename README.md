@@ -1,100 +1,77 @@
-# Polar Science Portal (SIH PS 26063) — Phase 1
+# Polar Science Portal (SIH PS 26063) — Phase 2
 
 Integrated Polar Science Outreach, Knowledge Repository and Media
-Dissemination Portal for NCPOR. This is the Phase 1 project foundation only:
-no auth, no repository, no AI yet — see "What remains" below.
+Dissemination Portal for NCPOR. Phase 2 adds auth + RBAC + RLS on top of
+the Phase 1 foundation.
 
 ## What was implemented
 
-- Next.js 14 (App Router) + TypeScript, strict mode.
-- Tailwind CSS with a custom design token set (`app/globals.css`,
-  `tailwind.config.ts`) — polar-ink/ice/glacial-teal palette, not the
-  default shadcn slate/zinc theme.
-- `components.json` pre-configured so `npx shadcn@latest add <component>`
-  works immediately once dependencies are installed.
-- Supabase client wiring:
-  - `lib/supabase/client.ts` — browser client (Client Components).
-  - `lib/supabase/server.ts` — server client for Server Components/Actions
-    (cookie-based session), plus a service-role admin client factory for
-    later privileged operations (RLS bypass for approvals, analytics).
-  - `types/supabase.ts` — placeholder `Database` type until the schema
-    exists (Phase 3), so the clients type-check today.
-- Basic layout and navigation: sticky header with primary nav (Repository,
-  Search, Knowledge Assistant, Education Hub, Polar Map, Media Gallery),
-  sign in/register links, and a footer with the SIH-prototype disclaimer.
-- A home page that doubles as a Phase 1 verification screen: it live-checks
-  the Supabase connection (via `auth.getUser()`, which succeeds with no
-  session even before any tables exist) and reports status inline.
-- Stub pages for every nav destination so the shell is fully clickable
-  during a demo, each labeled with the phase it'll be built in.
+**Phase 1 (preserved):**
+- Next.js 14 (App Router) + TypeScript strict + Tailwind + polar design tokens.
+- `lib/supabase/client.ts` + `server.ts` + `types/supabase.ts`, sticky header/nav/footer, home status panel.
 
-## Files changed / created
-
-Everything under this project is new (Phase 0 → Phase 1). Key paths:
-
-```
-app/
-  layout.tsx            root layout, fonts, header/footer
-  page.tsx              home page + Supabase connectivity check
-  globals.css           design tokens
-  {repository,search,assistant,education,map,media,login,register}/page.tsx
-components/
-  layout/site-header.tsx, site-nav.tsx, site-footer.tsx, coming-soon.tsx
-lib/
-  supabase/client.ts, server.ts
-  utils.ts               cn() helper (shadcn convention)
-types/supabase.ts
-tailwind.config.ts, postcss.config.mjs, components.json
-package.json, tsconfig.json, next.config.mjs
-.env.local, .env.example, .gitignore
-```
+**Phase 2 — Authentication + RBAC + RLS:**
+- `supabase/migrations/001_profiles.sql` — `user_role` enum (`admin|researcher|teacher|student|public`), `profiles` table (`id` FK → `auth.users.id`, `full_name`, `email`, `role`, `institution`, `created_at`, `updated_at`), `is_admin()` helper, `prevent_role_escalation` trigger (blocks client role changes), `handle_new_user` trigger (auto-creates profile on `auth.users` insert, sanitizes `admin` → `public`), RLS policies (`select` authenticated, `insert` own non-admin, `update` own, `admin all`), indexes.
+- `types/supabase.ts:1` — typed `profiles` + `user_role` (was placeholder).
+- `middleware.ts:1` + `lib/supabase/middleware.ts:1` — `updateSession` refreshes Supabase session on every request (required for Server Components).
+- `lib/auth/actions.ts:1` — Server Actions `signUp`/`signIn`/`signOut` with validation (6-char password, role whitelist `public|student|teacher|researcher`), `full_name` + `institution` → `raw_user_meta_data`, `emailRedirectTo` → `/auth/callback`.
+- `lib/auth/helpers.ts:1` — `getSessionUser()`, `getCurrentProfile()`, `requireUser()`, `requireRole()`.
+- `app/auth/callback/route.ts:1` — `exchangeCodeForSession` for email-confirmation flow.
+- `app/login/page.tsx:1` + `app/register/page.tsx:1` — replaced `ComingSoon` stubs with real forms (`components/auth/auth-form.tsx:1` — `LoginForm`/`RegisterForm` using `useFormState` + `useFormStatus`).
+- `components/layout/user-menu.tsx:1` + `components/layout/site-header.tsx:1` — header now shows signed-in user (name/role/email) + Sign out, or Sign in/Register when anon. Links to `/account`.
+- `app/account/page.tsx:1` — protected account page (shows email/name/role/institution, notes RLS guard).
+- `.env.example:1` — added `NEXT_PUBLIC_SITE_URL`.
+- ESLint + build clean (`lib/supabase/server.ts:26` typed, `middleware.ts` typed).
 
 ## Database changes
 
-None yet. Schema design starts in Phase 3.
+- **001_profiles** — see `supabase/migrations/001_profiles.sql`. Run it in Supabase Dashboard → SQL Editor (paste + Run). Idempotent.
+- Tables: `profiles` only so far. Repository tables arrive in Phase 3.
 
 ## Environment variables
 
-`.env.local` is already filled in with the Supabase project you gave me:
-
+`.env.local` (already has `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` for `uumartyqjyauuxwcrpqz`):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://uumartyqjyauuxwcrpqz.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
-SUPABASE_SERVICE_ROLE_KEY=      # add before Phase 3 (server-side only)
-OPENAI_API_KEY=                 # not needed until Phase 5
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon>
+SUPABASE_SERVICE_ROLE_KEY=   # still optional (only needed for service_role admin ops)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000  # optional, for email redirect
 ```
+`.env.local` is gitignored.
 
-`.env.local` is gitignored — never commit it. `.env.example` is the
-template for anyone else pulling the repo.
+## How to run it (Phase 2)
 
-## How to run it
+1) One-time DB setup — in Supabase SQL Editor, paste `supabase/migrations/001_profiles.sql` → Run.
+   For a polished demo, create your first admin afterwards:
+   ```sql
+   -- after registering admin@ncpor.local
+   update profiles set role='admin' where email='admin@ncpor.local';
+   ```
+   Also recommended in Supabase → Auth → Configuration: turn **OFF** "Confirm email" for local demos (so signUp immediately signs in), and add `http://localhost:3000/auth/callback` to redirect URLs.
 
-This sandbox has no network access, so dependencies haven't been installed
-here. On your own machine:
-
+2) Local dev:
 ```bash
-cd polar-portal
+cd C:/Users/USER/Desktop/polar-portal
 npm install
 npm run dev
+# if PowerShell blocks scripts:
+powershell -ExecutionPolicy Bypass -Command "npm run dev"
 ```
+Open http://localhost:3000
+- Header shows Sign in/Register when anon, or name/role + Sign out when signed in.
+- `/register` — create Public/Student/Teacher/Researcher (admin blocked); `/login` — sign in; `/account` — protected (redirects to `/login` if anon).
+- Try changing role via Supabase Table Editor as non-admin → trigger raises `Role changes are not allowed`.
 
-Then open http://localhost:3000 — the home page's "Phase 1 build status"
-panel should show Supabase as **Connected**.
-
-To verify before shipping a phase (per the project's own workflow rules):
-
+Verify before shipping:
 ```bash
-npm run lint
 npm run type-check
+npm run lint
 npm run build
 ```
+All three pass (build shows `ƒ Middleware 85.3kB`).
 
 ## What remains
 
-Everything from Phase 2 onward: authentication + RBAC + RLS, the
-repository schema and upload flow, hybrid search, the RAG assistant and
-ingestion pipeline, the AI content generator and approval workflow, the
-knowledge graph, the polar map, the education hub, the media gallery, and
-the admin dashboard — in that order, per the master prompt's phase plan.
-Do not start Phase 2 until you've run the app locally and confirmed the
-Supabase connection actually shows **Connected**.
+Phase 3: repository schema (expeditions/publications/datasets/media/etc.) + Storage + approval workflow → Phase 4 search → Phase 5 ingestion/pgvector → Phase 6 RAG → Phase 7 AI generation → Phase 8 Education → Phase 9 Map → Phase 10 Media → Phase 11 Admin.
+
+Do not present `profiles` demo rows as official NCPOR data.

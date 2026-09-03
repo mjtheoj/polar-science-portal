@@ -1,11 +1,20 @@
-import { ComingSoon } from "@/components/layout/coming-soon";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { signUp } from "@/lib/auth/actions";
+import { RegisterForm } from "@/components/auth/auth-form";
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  if (data.user) redirect("/");
+
   return (
-    <ComingSoon
-      title="Register"
-      phase="Arriving in Phase 2"
-      description="Account creation for researchers, teachers and students, with role assignment and protected routes."
-    />
+    <div className="container py-12 max-w-md">
+      <h1 className="font-display text-2xl font-semibold text-foreground">Create account</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Self-service for Public / Student / Teacher / Researcher. Admin is granted by an existing admin.</p>
+      <div className="mt-8">
+        <RegisterForm action={signUp} />
+      </div>
+    </div>
   );
 }
