@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design tokens — Polar Science Portal
+  Base: ice-white surface, deep polar-ink text, glacial teal accent.
+  Deliberately avoiding the cream/terracotta and near-black/acid-accent
+  defaults; this is an institutional research platform, not a startup site.
+*/
+@layer base {
+  :root {
+    --background: 200 20% 98%; /* #F7F9FA ice surface */
+    --foreground: 213 39% 12%; /* #101B2B polar ink */
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 39% 12%;
+
+    --primary: 190 55% 27%; /* #1F6F78 glacial teal */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 205 16% 92%;
+    --secondary-foreground: 213 39% 12%;
+
+    --muted: 205 16% 94%;
+    --muted-foreground: 209 12% 38%; /* #4B5A66 slate */
+
+    --accent: 28 62% 45%; /* #C97A2B warm amber, used sparingly */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 4 66% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 205 16% 85%; /* #D8DEE3 hairline */
+    --input: 205 16% 85%;
+    --ring: 190 55% 27%;
+
+    --radius: 0.375rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
