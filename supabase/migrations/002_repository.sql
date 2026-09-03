@@ -100,8 +100,9 @@ CREATE INDEX IF NOT EXISTS idx_documents_expedition ON public.documents(expediti
 CREATE INDEX IF NOT EXISTS idx_documents_author ON public.documents(author_id);
 CREATE INDEX IF NOT EXISTS idx_documents_pubdate ON public.documents(publication_date DESC);
 CREATE INDEX IF NOT EXISTS idx_documents_created ON public.documents(created_at DESC);
--- Full-text search index (keyword + title/description)
-CREATE INDEX IF NOT EXISTS idx_documents_fts ON public.documents USING gin (to_tsvector('english', coalesce(title,'') || ' ' || coalesce(description,'') || ' ' || coalesce(array_to_string(keywords,' '),'')));
+-- Full-text search index (title + description only; keywords via array containment; avoids IMMUTABLE error with array_to_string)
+CREATE INDEX IF NOT EXISTS idx_documents_fts ON public.documents USING gin (to_tsvector('english', coalesce(title,'') || ' ' || coalesce(description,'')));
+CREATE INDEX IF NOT EXISTS idx_documents_keywords ON public.documents USING gin (keywords);
 
 -- Junction: document ↔ topics (many-to-many)
 CREATE TABLE IF NOT EXISTS public.document_topics (
