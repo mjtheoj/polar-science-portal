@@ -18,11 +18,15 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
   const meta = (doc as { metadata?: Record<string, unknown> }).metadata ?? {};
   const storagePath = (doc as { storage_path?: string | null }).storage_path;
   const fileType = (doc as { file_type?: string | null }).file_type;
+  const originalName = (meta as { original_filename?: string }).original_filename as string | undefined;
+  const displayFileName = originalName || (storagePath ? storagePath.split("/").pop() ?? storagePath : null) || null;
+  const fileLabel = displayFileName || (doc as { title: string }).title;
 
-  // Build public storage URL if present (bucket is public)
+  // Build public storage URL if present (bucket is public) — use download param for nice filename
   const publicUrl = storagePath
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/repository-files/${storagePath}`
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/repository-files/${encodeURIComponent(storagePath).replace(/%2F/g, "/")}`
     : null;
+  const downloadUrl = publicUrl && displayFileName ? `${publicUrl}?download=${encodeURIComponent(displayFileName)}` : publicUrl;
 
   const topicNames = (topics as { research_topics: { name: string } }[] | null)?.map((t) => t.research_topics.name) ?? [];
   const coAuthors = (authors as { profiles: { full_name: string } }[] | null)?.map((a) => a.profiles.full_name) ?? [];
@@ -69,17 +73,26 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
             <h3 className="font-medium">File</h3>
             {storagePath ? (
               <div className="mt-3 space-y-2 text-sm">
-                <p className="text-muted-foreground truncate">{storagePath} {fileType ? `· ${fileType}` : ""}</p>
+                <p className="font-medium truncate" title={displayFileName ?? undefined}>{displayFileName}</p>
+                <p className="text-xs text-muted-foreground truncate">{fileType ? `${fileType}` : ""}{fileType && (doc as { file_size?: number | null }).file_size ? ` · ${(((doc as { file_size: number }).file_size) / 1024).toFixed(1)} KB` : ""}</p>
                 {publicUrl && (doc as { visibility: string }).visibility === "public" && (doc as { approval_status: string }).approval_status === "published" ? (
-                  <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-block rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                    Open / Download
-                  </a>
+                  <div className="flex gap-2">
+                    <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-block rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                      View
+                    </a>
+                    <a href={downloadUrl ?? publicUrl} download={displayFileName ?? undefined} className="inline-block rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary">
+                      Download
+                    </a>
+                  </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">File is {String((doc as { visibility: string }).visibility)}/{String((doc as { approval_status: string }).approval_status)} — only published/public files are directly downloadable on the public portal. Owners/admins can still open via Supabase console.</p>
+                  <p className="text-xs text-muted-foreground">File is {String((doc as { visibility: string }).visibility)}/{String((doc as { approval_status: string }).approval_status)} — only published/public files are directly viewable on the public portal. Owners/admins can still open via Supabase console.</p>
                 )}
                 {fileType?.startsWith("image/") && publicUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={publicUrl} alt={(doc as { title: string }).title} className="mt-2 w-full rounded border" />
+                  <img src={publicUrl} alt={fileLabel} className="mt-2 w-full rounded border" />
+                )}
+                {publicUrl && fileType === "application/pdf" && (doc as { visibility: string }).visibility === "public" && (doc as { approval_status: string }).approval_status === "published" && (
+                  <iframe src={publicUrl} title={fileLabel} className="mt-2 h-96 w-full rounded border" />
                 )}
               </div>
             ) : (

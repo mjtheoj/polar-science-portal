@@ -46,7 +46,11 @@ export async function uploadDocument(_prev: UploadResult | null, formData: FormD
       // still allow but warn — not blocking for prototype
     }
     const docId = crypto.randomUUID();
-    storagePath = `${user.id}/${docId}.${ext}`;
+    const safeOriginal = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || `file.${ext}`;
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "document";
+    storagePath = `${user.id}/${slug}__${safeOriginal}`;
+    // ensure uniqueness if same name uploaded twice: append docId fragment
+    if (storagePath.length > 120) storagePath = `${user.id}/${docId.slice(0, 8)}_${safeOriginal}`;
     fileType = file.type || `application/${ext}`;
     fileSize = file.size;
 
@@ -57,8 +61,9 @@ export async function uploadDocument(_prev: UploadResult | null, formData: FormD
 
     if (uploadErr) return { error: `Storage upload failed: ${uploadErr.message}. Did you run 002b_storage.sql?` };
 
-    // insert document with that storagePath
+    // insert document with that storagePath + original filename in metadata
     const keywords = keywordsRaw ? keywordsRaw.split(",").map((k) => k.trim()).filter(Boolean) : [];
+    const originalFilename = file.name;
     const { data: inserted, error: insertErr } = await supabase
       .from("documents")
       .insert({
@@ -69,6 +74,7 @@ export async function uploadDocument(_prev: UploadResult | null, formData: FormD
         storage_path: storagePath,
         file_type: fileType,
         file_size: fileSize,
+        metadata: { original_filename: originalFilename } as never,
         author_id: user.id,
         institution_id: institutionId,
         expedition_id: expeditionId,

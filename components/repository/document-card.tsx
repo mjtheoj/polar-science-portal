@@ -30,6 +30,10 @@ export function DocumentCard({ doc }: { doc: Record<string, unknown> }) {
   const keywords = (doc.keywords as string[] | null) ?? [];
   const status = (doc.approval_status as string) ?? "draft";
   const pubDate = doc.publication_date as string | null;
+  const meta = (doc.metadata as Record<string, unknown> | null) ?? null;
+  const originalName = meta && typeof meta.original_filename === "string" ? (meta.original_filename as string) : null;
+  const storagePath = doc.storage_path as string | null;
+  const displayFile = originalName || (storagePath ? storagePath.split("/").pop() ?? null : null);
   return (
     <Link href={`/repository/${id}`} className="group flex flex-col rounded-lg border bg-card p-4 hover:shadow-sm transition-shadow">
       <div className="flex items-center gap-2 text-xs">
@@ -44,6 +48,7 @@ export function DocumentCard({ doc }: { doc: Record<string, unknown> }) {
           <span key={k} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{k}</span>
         ))}
       </div>
+      {displayFile && <p className="mt-2 truncate text-xs text-muted-foreground" title={displayFile}>📎 {displayFile}</p>}
       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
         <span>{pubDate ? new Date(pubDate).getFullYear().toString() : ""}</span>
         <span className="font-medium text-primary group-hover:underline">Open →</span>
